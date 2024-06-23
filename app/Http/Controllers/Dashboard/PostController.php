@@ -3,8 +3,13 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Post\PutRequest;
+use App\Http\Requests\Post\StoreRequest;
+use App\Models\Category;
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class PostController extends Controller
 {
@@ -13,7 +18,8 @@ class PostController extends Controller
      */
     public function index()
     {
-        //
+        $posts = Post::paginate(2);
+        echo view('dashboard.post.index', compact('posts'));
     }
 
     /**
@@ -21,15 +27,45 @@ class PostController extends Controller
      */
     public function create()
     {
-        echo view('dashboard.post.create');
+        $categories = Category::pluck('id', 'title');
+        $post = new Post();
+
+        echo view('dashboard.post.create', compact('categories', 'post'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreRequest $request)
     {
-        echo "store";
+        // echo request("title");
+        // dd($request);
+        // dd(request("title"));
+        // echo $request->input('slug');
+
+        // $validated = $request->validate(StoreRequest::myRules());
+
+        // $validated = Validator::make($request->all(), StoreRequest::myRules());
+        
+        // dd($validated->errors());
+        // dd($validated->fails());
+
+        // $data = array_merge($request->all(), ['image' => '']);
+
+        // dd($data);
+
+        // $data = $request->validated();
+        // $data['slug'] = Str::slug($data['title']);
+        
+        // dd($data);
+
+        Post::create($request->validated());
+        
+        // return route("post.create");
+        // return redirect(("/post/create"));
+        // return redirect()->route("post.create");
+        // return redirect()->route("post.create");
+        return to_route("post.index")->with('status', "Registro creado.");
     }
 
     /**
@@ -37,7 +73,7 @@ class PostController extends Controller
      */
     public function show(Post $post)
     {
-        //
+        return view("dashboard.post.show", compact("post"));
     }
 
     /**
@@ -45,15 +81,24 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
-        //
+        $categories = Category::pluck('id', 'title');
+
+        echo view('dashboard.post.edit', compact('categories', 'post'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Post $post)
+    public function update(PutRequest $request, Post $post)
     {
-        //
+        $data = $request->validated()["image"];
+        if (isset($data["image"])) {
+            $data["image"] = $filename = time().".".$data["image"]->extension();
+            $request->image->move(public_path("image"), $filename);
+        }
+        $post->update($data);
+        // $request->session()->flash('status', "Registro actualizado.");
+        return to_route("post.index")->with('status', "Registro actualizado.");
     }
 
     /**
@@ -61,6 +106,7 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        //
+        $post->delete();
+        return to_route("post.index")->with('status', "Registro eliminado.");
     }
 }
